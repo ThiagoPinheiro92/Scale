@@ -3,7 +3,6 @@ package com.th.scala.activities;
 import android.os.Bundle;
 import android.widget.ExpandableListView;
 
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.th.scala.R;
 import com.th.scala.adapters.ScheduleExpandableAdapter;

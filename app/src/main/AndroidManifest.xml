@@ -10,7 +10,7 @@ android:icon="@mipmap/ic_launcher"
 android:label="@string/app_name"
 android:roundIcon="@mipmap/ic_launcher_round"
 android:supportsRtl="true"
-android:theme="@style/Theme.ScaleApp">
+android:theme="@style/Theme.MyApplication">
 
 <activity
 android:name=".activities.MainActivity"
@@ -26,6 +26,7 @@ android:screenOrientation="portrait">
 <activity android:name=".activities.MachineManagementActivity" />
 <activity android:name=".activities.EmployeeManagementActivity" />
 <activity android:name=".activities.ScheduleActivity" />
+<activity android:name=".activities.SettingsActivity" />
 
 </application>
 

@@ -17,9 +17,7 @@ android:gravity="center">
 android:id="@+id/card_machines"
 android:layout_width="match_parent"
 android:layout_height="wrap_content"
-android:layout_marginBottom="16dp"
-app:cardCornerRadius="8dp"
-app:cardElevation="4dp">
+android:layout_marginBottom="16dp">
 
 <LinearLayout
 android:layout_width="match_parent"
@@ -30,8 +28,7 @@ android:padding="16dp">
 <ImageView
 android:layout_width="48dp"
 android:layout_height="48dp"
-android:src="@drawable/ic_machine"
-android:tint="?attr/colorPrimary" />
+android:tint="#FF6200EE" />
 
 <TextView
 android:layout_width="wrap_content"
@@ -49,9 +46,8 @@ android:textStyle="bold" />
 android:id="@+id/card_employees"
 android:layout_width="match_parent"
 android:layout_height="wrap_content"
-android:layout_marginBottom="16dp"
-app:cardCornerRadius="8dp"
-app:cardElevation="4dp">
+android:layout_marginBottom="16dp">
+
 
 <LinearLayout
 android:layout_width="match_parent"
@@ -62,8 +58,7 @@ android:padding="16dp">
 <ImageView
 android:layout_width="48dp"
 android:layout_height="48dp"
-android:src="@drawable/ic_employee"
-android:tint="?attr/colorPrimary" />
+android:tint="#FF6200EE" />
 
 <TextView
 android:layout_width="wrap_content"
@@ -81,9 +76,7 @@ android:textStyle="bold" />
 android:id="@+id/card_schedule"
 android:layout_width="match_parent"
 android:layout_height="wrap_content"
-android:layout_marginBottom="16dp"
-app:cardCornerRadius="8dp"
-app:cardElevation="4dp">
+android:layout_marginBottom="16dp">
 
 <LinearLayout
 android:layout_width="match_parent"
@@ -94,9 +87,7 @@ android:padding="16dp">
 <ImageView
 android:layout_width="48dp"
 android:layout_height="48dp"
-android:src="@drawable/ic_schedule"
-android:tint="?attr/colorPrimary" />
-
+android:tint="#FF6200EE" />
 <TextView
 android:layout_width="wrap_content"
 android:layout_height="wrap_content"
@@ -112,9 +103,8 @@ android:textStyle="bold" />
 <androidx.cardview.widget.CardView
 android:id="@+id/card_settings"
 android:layout_width="match_parent"
-android:layout_height="wrap_content"
-app:cardCornerRadius="8dp"
-app:cardElevation="4dp">
+android:layout_height="wrap_content">
+
 
 <LinearLayout
 android:layout_width="match_parent"
@@ -125,8 +115,7 @@ android:padding="16dp">
 <ImageView
 android:layout_width="48dp"
 android:layout_height="48dp"
-android:src="@drawable/ic_settings"
-android:tint="?attr/colorPrimary" />
+android:tint="#FF6200EE" />
 
 <TextView
 android:layout_width="wrap_content"

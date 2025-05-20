@@ -3,16 +3,14 @@ id 'com.android.application'
 }
 
 android {
-compileSdk 31
+compileSdk 34
 
 defaultConfig {
 applicationId "com.th.scala"
-minSdk 29
-targetSdk 31
+minSdk 21
+targetSdk 34
 versionCode 1
 versionName "1.0"
-
-// Adicione isso para evitar conflitos com bibliotecas do AndroidX
 vectorDrawables.useSupportLibrary = true
 }
 
@@ -22,46 +20,20 @@ minifyEnabled false
 proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 }
 }
+
 compileOptions {
 sourceCompatibility JavaVersion.VERSION_1_8
 targetCompatibility JavaVersion.VERSION_1_8
 }
-
-// Habilitar viewBinding (opcional mas recomendado)
-buildFeatures {
-viewBinding true
-}
 }
 
 dependencies {
-// Dependências básicas do Android
-implementation 'androidx.appcompat:appcompat:1.4.1'
-implementation 'com.google.android.material:material:1.6.0' // Ou versão mais recente
-implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
-    implementation 'com.google.android.material:material:1.6.0' // Para Material Components
-    implementation 'androidx.cardview:cardview:1.0.0' // Para CardView tradicional (opcional)
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4' // Para ConstraintLayout
-}
-// Para RecyclerView (listas)
-implementation 'androidx.recyclerview:recyclerview:1.2.1'
-
-// Para Room Database (persistência)
-implementation 'androidx.room:room-runtime:2.4.2'
-annotationProcessor 'androidx.room:room-compiler:2.4.2'
-
-// Para LiveData e ViewModel
-implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.4.1'
-implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.1'
-
-// Para navegação entre activities/fragments
-implementation 'androidx.navigation:navigation-fragment:2.4.1'
-implementation 'androidx.navigation:navigation-ui:2.4.1'
-
-// Para cards (usado no MainActivity)
+implementation 'androidx.appcompat:appcompat:1.6.1'
+implementation 'com.google.android.material:material:1.11.0'
+implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 implementation 'androidx.cardview:cardview:1.0.0'
-
-// Testes (opcional)
-testImplementation 'junit:junit:4.13.2'
-androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+implementation 'androidx.preference:preference-ktx:1.2.1'
+}
+// Adicione core-ktx se usar Kotlin (opcional)
+implementation 'androidx.core:core-ktx:1.12.0'
 }
