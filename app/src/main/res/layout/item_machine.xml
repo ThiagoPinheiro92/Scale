@@ -1,38 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 android:layout_width="match_parent"
 android:layout_height="wrap_content"
-android:orientation="horizontal"
-android:padding="8dp">
+android:orientation="vertical"
+android:padding="12dp"
+android:background="@android:color/white"
+android:layout_marginBottom="4dp">
 
 <TextView
-android:id="@+id/machine_name"
-android:layout_width="0dp"
-android:layout_weight="1.5"
+android:id="@+id/machine_info"
+android:layout_width="match_parent"
 android:layout_height="wrap_content"
-android:ellipsize="end"
-android:maxLines="1"/>
+android:textSize="14sp"
+android:lineSpacingMultiplier="1.2"/>
 
-<EditText
-android:id="@+id/product_name"
-android:layout_width="0dp"
-android:layout_weight="1.5"
+<LinearLayout
+android:layout_width="match_parent"
 android:layout_height="wrap_content"
-android:hint="Produto"
-android:maxLines="1"/>
+android:orientation="horizontal"
+android:layout_marginTop="8dp">
+
+<TextView
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:text="Posição: "
+android:textSize="14sp"/>
+
+<TextView
+android:id="@+id/machine_position"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:textSize="14sp"/>
+</LinearLayout>
 
 <Spinner
 android:id="@+id/difficulty_spinner"
-android:layout_width="0dp"
-android:layout_weight="1"
+android:layout_width="match_parent"
 android:layout_height="wrap_content"
-android:minWidth="80dp"
-android:padding="4dp"/>
-
-<EditText
-android:id="@+id/operator_name"
-android:layout_width="0dp"
-android:layout_weight="1"
-android:layout_height="wrap_content"
-android:hint="Operador"
-android:maxLines="1"/>
+android:layout_marginTop="8dp"
+android:minWidth="120dp"/>
 </LinearLayout>
