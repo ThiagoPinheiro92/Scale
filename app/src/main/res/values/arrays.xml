@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
+<string name="app_name">Distribuição de Máquinas</string>
 <string-array name="difficulty_levels">
-<item>Fácil</item>
-<item>Médio</item>
-<item>Difícil</item>
+<item>F - Fácil</item>
+<item>M - Médio</item>
+<item>D - Difícil</item>
 </string-array>
 </resources>

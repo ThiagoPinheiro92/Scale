@@ -45,28 +45,28 @@ public class MachineAdapter extends BaseAdapter {
 		
 		Machine machine = machineList.get(position);
 		
-		// Vincule os componentes do layout
 		TextView machineName = convertView.findViewById(R.id.machine_name);
 		EditText productName = convertView.findViewById(R.id.product_name);
 		Spinner difficultySpinner = convertView.findViewById(R.id.difficulty_spinner);
 		EditText operatorName = convertView.findViewById(R.id.operator_name);
 		
-		// Configure os valores iniciais
 		machineName.setText(machine.getName() + " (" + machine.getNumber() + ")");
 		productName.setText(machine.getProduct());
 		operatorName.setText(machine.getOperator());
 		
-		// Configure o Spinner de dificuldade
-		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+		// Array de dificuldades com abreviações
+		String[] difficultyLevels = {"F - Fácil", "M - Médio", "D - Difícil"};
+		
+		ArrayAdapter<String> adapter = new ArrayAdapter<>(
 		context,
-		R.array.difficulty_levels,
-		android.R.layout.simple_spinner_item
+		android.R.layout.simple_spinner_item,
+		difficultyLevels
 		);
+		
 		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		difficultySpinner.setAdapter(adapter);
 		difficultySpinner.setSelection(machine.getDifficulty() - 1);
 		
-		// Listeners para atualização
 		productName.setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) {
 				machine.setProduct(productName.getText().toString());
@@ -76,7 +76,7 @@ public class MachineAdapter extends BaseAdapter {
 		difficultySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-				machine.setDifficulty(pos + 1);
+				machine.setDifficulty(pos + 1); // +1 porque os índices começam em 0
 			}
 			
 			@Override
