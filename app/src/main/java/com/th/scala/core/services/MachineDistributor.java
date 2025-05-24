@@ -2,133 +2,106 @@ package com.th.scala.core.services;
 
 import com.th.scala.core.models.Machine;
 import com.th.scala.core.models.Operator;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MachineDistributor {
+	
+	private static class OperatorLoad {
+		Set<Integer> difficultMachines = new HashSet<>();
+		Set<Integer> mediumMachines = new HashSet<>();
+		Set<Integer> easyMachines = new HashSet<>();
+	}
 	
 	public void distributeMachines(List<Machine> machines, List<Operator> operators) {
 		clearCurrentDistribution(machines);
 		Collections.shuffle(operators);
 		
-		// Separa as máquinas por dificuldade
-		List<Machine> difficultMachines = new ArrayList<>();
-		List<Machine> mediumMachines = new ArrayList<>();
-		List<Machine> easyMachines = new ArrayList<>();
+		Map<String, OperatorLoad> operatorLoads = new HashMap<>();
 		
-		for (Machine machine : machines) {
-			switch (machine.getDifficulty()) {
-				case 3: difficultMachines.add(machine); break;
-				case 2: mediumMachines.add(machine); break;
-				case 1: easyMachines.add(machine); break;
-				default: easyMachines.add(machine); // trata não definido como fácil
+		// Fase 1: Atribui máquinas difíceis (prioridade máxima)
+		for (int i = 0; i < machines.size(); i++) {
+			Machine machine = machines.get(i);
+			if (machine.getDifficulty() == 3) {
+				assignMachine(machine, i, operators, operatorLoads, true);
 			}
 		}
 		
-		// Mapa para controlar as atribuições
-		Map<String, OperatorAssignment> operatorAssignments = new HashMap<>();
+		// Fase 2: Atribui máquinas médias
+		for (int i = 0; i < machines.size(); i++) {
+			Machine machine = machines.get(i);
+			if (machine.getDifficulty() == 2 && machine.getOperator().isEmpty()) {
+				assignMachine(machine, i, operators, operatorLoads, false);
+			}
+		}
 		
-		// 1. Atribui máquinas difíceis primeiro (operadores exclusivos)
-		assignDifficultMachines(difficultMachines, operators, operatorAssignments);
-		
-		// 2. Atribui máquinas médias
-		assignMediumMachines(mediumMachines, operators, operatorAssignments);
-		
-		// 3. Atribui máquinas fáceis
-		assignEasyMachines(easyMachines, operators, operatorAssignments);
+		// Fase 3: Atribui máquinas fáceis
+		for (int i = 0; i < machines.size(); i++) {
+			Machine machine = machines.get(i);
+			if (machine.getDifficulty() == 1 && machine.getOperator().isEmpty()) {
+				assignMachine(machine, i, operators, operatorLoads, false);
+			}
+		}
+	}
+	
+	private void assignMachine(Machine machine,
+	int machineIndex,
+	List<Operator> operators,
+	Map<String, OperatorLoad> operatorLoads,
+	boolean isDifficult) {
+		for (Operator operator : operators) {
+			OperatorLoad load = operatorLoads.getOrDefault(operator.getName(), new OperatorLoad());
+			
+			if (canAssign(machine, operator, load, isDifficult)) {
+				machine.setOperator(operator.getName());
+				updateLoad(machine, load, machineIndex);
+				operatorLoads.put(operator.getName(), load);
+				break;
+			}
+		}
+	}
+	
+	private boolean canAssign(Machine machine,
+	Operator operator,
+	OperatorLoad load,
+	boolean isDifficult) {
+		if (isDifficult) {
+			return operator.canHandleDifficultMachines() &&
+			load.difficultMachines.isEmpty() &&
+			load.mediumMachines.isEmpty() &&
+			load.easyMachines.isEmpty();
+			} else {
+			switch (machine.getDifficulty()) {
+				case 2: // Média
+				return load.difficultMachines.isEmpty() &&
+				(load.mediumMachines.size() < 1 ||
+				(load.mediumMachines.size() < 2 && load.easyMachines.isEmpty()));
+				
+				case 1: // Fácil
+				return load.difficultMachines.isEmpty() &&
+				(load.easyMachines.size() < 2 ||
+				(load.easyMachines.size() < 3 && load.mediumMachines.isEmpty()));
+			}
+		}
+		return false;
+	}
+	
+	private void updateLoad(Machine machine, OperatorLoad load, int machineIndex) {
+		switch (machine.getDifficulty()) {
+			case 3:
+			load.difficultMachines.add(machineIndex);
+			break;
+			case 2:
+			load.mediumMachines.add(machineIndex);
+			break;
+			case 1:
+			load.easyMachines.add(machineIndex);
+			break;
+		}
 	}
 	
 	private void clearCurrentDistribution(List<Machine> machines) {
 		for (Machine machine : machines) {
 			machine.setOperator("");
-		}
-	}
-	
-	private void assignDifficultMachines(List<Machine> difficultMachines,
-	List<Operator> operators,
-	Map<String, OperatorAssignment> operatorAssignments) {
-		for (Machine machine : difficultMachines) {
-			for (Operator operator : operators) {
-				if (!operatorAssignments.containsKey(operator.getName()) &&
-				operator.canHandleDifficultMachines()) {
-					
-					machine.setOperator(operator.getName());
-					operatorAssignments.put(operator.getName(),
-					new OperatorAssignment(1, 0, 0));
-					break;
-				}
-			}
-		}
-	}
-	
-	private void assignMediumMachines(List<Machine> mediumMachines,
-	List<Operator> operators,
-	Map<String, OperatorAssignment> operatorAssignments) {
-		for (Machine machine : mediumMachines) {
-			if (!machine.getOperator().isEmpty()) continue;
-			
-			for (Operator operator : operators) {
-				OperatorAssignment assignment = operatorAssignments.getOrDefault(
-				operator.getName(),
-				new OperatorAssignment(0, 0, 0)
-				);
-				
-				// Pode atribuir se:
-				// 1. Não tiver máquinas difíceis
-				// 2. Ainda não atingiu limite de 2 médias
-				if (assignment.difficultCount == 0 &&
-				assignment.mediumCount < 2) {
-					
-					machine.setOperator(operator.getName());
-					assignment.mediumCount++;
-					operatorAssignments.put(operator.getName(), assignment);
-					break;
-				}
-			}
-		}
-	}
-	
-	private void assignEasyMachines(List<Machine> easyMachines,
-	List<Operator> operators,
-	Map<String, OperatorAssignment> operatorAssignments) {
-		for (Machine machine : easyMachines) {
-			if (!machine.getOperator().isEmpty()) continue;
-			
-			for (Operator operator : operators) {
-				OperatorAssignment assignment = operatorAssignments.getOrDefault(
-				operator.getName(),
-				new OperatorAssignment(0, 0, 0)
-				);
-				
-				// Pode atribuir se:
-				// 1. Não tiver máquinas difíceis ou médias
-				// 2. Ainda não atingiu limite de 3 fáceis
-				if (assignment.difficultCount == 0 &&
-				assignment.mediumCount == 0 &&
-				assignment.easyCount < 3) {
-					
-					machine.setOperator(operator.getName());
-					assignment.easyCount++;
-					operatorAssignments.put(operator.getName(), assignment);
-					break;
-				}
-			}
-		}
-	}
-	
-	// Classe auxiliar para rastrear atribuições
-	private static class OperatorAssignment {
-		int difficultCount;
-		int mediumCount;
-		int easyCount;
-		
-		OperatorAssignment(int difficultCount, int mediumCount, int easyCount) {
-			this.difficultCount = difficultCount;
-			this.mediumCount = mediumCount;
-			this.easyCount = easyCount;
 		}
 	}
 }
