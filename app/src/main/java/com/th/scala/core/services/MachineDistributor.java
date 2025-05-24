@@ -6,96 +6,85 @@ import java.util.*;
 
 public class MachineDistributor {
 	
-	private static class OperatorLoad {
-		Set<Integer> difficultMachines = new HashSet<>();
-		Set<Integer> mediumMachines = new HashSet<>();
-		Set<Integer> easyMachines = new HashSet<>();
-	}
-	
 	public void distributeMachines(List<Machine> machines, List<Operator> operators) {
 		clearCurrentDistribution(machines);
 		Collections.shuffle(operators);
 		
-		Map<String, OperatorLoad> operatorLoads = new HashMap<>();
+		// Contadores por operador
+		Map<String, Integer> difficultCount = new HashMap<>();
+		Map<String, Integer> mediumCount = new HashMap<>();
+		Map<String, Integer> easyCount = new HashMap<>();
 		
-		// Fase 1: Atribui máquinas difíceis (prioridade máxima)
-		for (int i = 0; i < machines.size(); i++) {
-			Machine machine = machines.get(i);
+		// Fase 1: Atribui máquinas difíceis
+		for (Machine machine : machines) {
 			if (machine.getDifficulty() == 3) {
-				assignMachine(machine, i, operators, operatorLoads, true);
+				assignDifficultMachine(machine, operators, difficultCount);
 			}
 		}
 		
 		// Fase 2: Atribui máquinas médias
-		for (int i = 0; i < machines.size(); i++) {
-			Machine machine = machines.get(i);
+		for (Machine machine : machines) {
 			if (machine.getDifficulty() == 2 && machine.getOperator().isEmpty()) {
-				assignMachine(machine, i, operators, operatorLoads, false);
+				assignMediumMachine(machine, operators, difficultCount, mediumCount, easyCount);
 			}
 		}
 		
 		// Fase 3: Atribui máquinas fáceis
-		for (int i = 0; i < machines.size(); i++) {
-			Machine machine = machines.get(i);
+		for (Machine machine : machines) {
 			if (machine.getDifficulty() == 1 && machine.getOperator().isEmpty()) {
-				assignMachine(machine, i, operators, operatorLoads, false);
+				assignEasyMachine(machine, operators, difficultCount, easyCount);
 			}
 		}
 	}
 	
-	private void assignMachine(Machine machine,
-	int machineIndex,
+	private void assignDifficultMachine(Machine machine,
 	List<Operator> operators,
-	Map<String, OperatorLoad> operatorLoads,
-	boolean isDifficult) {
+	Map<String, Integer> difficultCount) {
 		for (Operator operator : operators) {
-			OperatorLoad load = operatorLoads.getOrDefault(operator.getName(), new OperatorLoad());
-			
-			if (canAssign(machine, operator, load, isDifficult)) {
-				machine.setOperator(operator.getName());
-				updateLoad(machine, load, machineIndex);
-				operatorLoads.put(operator.getName(), load);
-				break;
-			}
-		}
-	}
-	
-	private boolean canAssign(Machine machine,
-	Operator operator,
-	OperatorLoad load,
-	boolean isDifficult) {
-		if (isDifficult) {
-			return operator.canHandleDifficultMachines() &&
-			load.difficultMachines.isEmpty() &&
-			load.mediumMachines.isEmpty() &&
-			load.easyMachines.isEmpty();
-			} else {
-			switch (machine.getDifficulty()) {
-				case 2: // Média
-				return load.difficultMachines.isEmpty() &&
-				(load.mediumMachines.size() < 1 ||
-				(load.mediumMachines.size() < 2 && load.easyMachines.isEmpty()));
+			if (operator.canHandleDifficultMachines() &&
+			!difficultCount.containsKey(operator.getName())) {
 				
-				case 1: // Fácil
-				return load.difficultMachines.isEmpty() &&
-				(load.easyMachines.size() < 2 ||
-				(load.easyMachines.size() < 3 && load.mediumMachines.isEmpty()));
+				machine.setOperator(operator.getName());
+				difficultCount.put(operator.getName(), 1);
+				return;
 			}
 		}
-		return false;
 	}
 	
-	private void updateLoad(Machine machine, OperatorLoad load, int machineIndex) {
-		switch (machine.getDifficulty()) {
-			case 3:
-			load.difficultMachines.add(machineIndex);
-			break;
-			case 2:
-			load.mediumMachines.add(machineIndex);
-			break;
-			case 1:
-			load.easyMachines.add(machineIndex);
-			break;
+	private void assignMediumMachine(Machine machine,
+	List<Operator> operators,
+	Map<String, Integer> difficultCount,
+	Map<String, Integer> mediumCount,
+	Map<String, Integer> easyCount) {
+		for (Operator operator : operators) {
+			int currentMedium = mediumCount.getOrDefault(operator.getName(), 0);
+			int currentEasy = easyCount.getOrDefault(operator.getName(), 0);
+			
+			if (!difficultCount.containsKey(operator.getName()) &&
+			currentMedium < 2 &&
+			currentEasy == 0) {
+				
+				machine.setOperator(operator.getName());
+				mediumCount.put(operator.getName(), currentMedium + 1);
+				return;
+			}
+		}
+	}
+	
+	private void assignEasyMachine(Machine machine,
+	List<Operator> operators,
+	Map<String, Integer> difficultCount,
+	Map<String, Integer> easyCount) {
+		for (Operator operator : operators) {
+			int currentEasy = easyCount.getOrDefault(operator.getName(), 0);
+			
+			if (!difficultCount.containsKey(operator.getName()) &&
+			currentEasy < 3) {
+				
+				machine.setOperator(operator.getName());
+				easyCount.put(operator.getName(), currentEasy + 1);
+				return;
+			}
 		}
 	}
 	

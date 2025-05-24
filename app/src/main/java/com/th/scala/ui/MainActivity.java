@@ -2,23 +2,30 @@ package com.th.scala.ui;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import com.th.scala.R;
 import com.th.scala.core.adapters.MachineAdapter;
-import com.th.scala.core.models.Operator;
 import com.th.scala.core.models.Machine;
+import com.th.scala.core.models.Operator;
 import com.th.scala.core.services.MachineDistributor;
 import com.th.scala.core.services.MachineFactory;
+
 import java.util.ArrayList;
 import java.util.List;
-import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	
+	private MachineAdapter adapter;
 	private MachineDistributor distributor;
 	private MachineFactory factory;
-	private MachineAdapter adapter;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -29,35 +36,23 @@ public class MainActivity extends Activity {
 		distributor = new MachineDistributor();
 		factory = new MachineFactory();
 		
-		// Configura ListView e Adapter
-		ListView listView = findViewById(R.id.list_view);
+		// Configura ListView
+		ListView listView = (ListView) findViewById(R.id.list_view);
 		adapter = new MachineAdapter(this, factory.createDefaultMachines());
 		listView.setAdapter(adapter);
 		
 		// Configura botão de distribuição
-		Button distributeBtn = findViewById(R.id.distribute_button);
-		distributeBtn.setOnClickListener(v -> {
-			// Verifica se todas as máquinas têm dificuldade definida
-			boolean allMachinesHaveDifficulty = true;
-			for (Machine machine : adapter.getMachines()) {
-				if (machine.getDifficulty() < 1 || machine.getDifficulty() > 3) {
-					allMachinesHaveDifficulty = false;
-					break;
-				}
+		Button distributeBtn = (Button) findViewById(R.id.distribute_button);
+		distributeBtn.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				List<Operator> operators = createOperators();
+				distributor.distributeMachines(adapter.getMachines(), operators);
+				adapter.notifyDataSetChanged();
+				Toast.makeText(MainActivity.this, "Máquinas distribuídas!", Toast.LENGTH_SHORT).show();
 			}
-			
-			if (!allMachinesHaveDifficulty) {
-				Toast.makeText(MainActivity.this,
-				"Defina a dificuldade para todas as máquinas (Fácil, Médio ou Difícil)",
-				Toast.LENGTH_LONG).show();
-				return;
-			}
-			
-			List<Operator> operators = createOperators();
-			distributor.distributeMachines(adapter.getMachines(), operators);
-			adapter.notifyDataSetChanged();
 		});
-		}
+	}
 	
 	private List<Operator> createOperators() {
 		List<Operator> operators = new ArrayList<>();
