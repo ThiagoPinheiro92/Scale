@@ -13,17 +13,20 @@ public class MachineFactory {
 		// Formato: new Machine(nome, número, operador, produto, dificuldade, éPesada)
 		
 		// Máquinas de exemplo - nomes genéricos
-		machines.add(new Machine("Torno CNC", 101, "", "Peças Automotivas", 0, false));
-		machines.add(new Machine("Fresa Industrial", 102, "", "Componentes Aeroespaciais", 0, false));
-		machines.add(new Machine("Retífica de Precisão", 103, "", "Moldes Industriais", 0, true));
-		machines.add(new Machine("Injetora de Plástico", 104, "", "Peças Plásticas", 0, false));
-		machines.add(new Machine("Cortadora Laser", 105, "", "Chapas Metálicas", 0, true));
-		machines.add(new Machine("Prensa Hidráulica", 106, "", "Forjamento", 0, true));
-		machines.add(new Machine("Furadeira Radial", 107, "", "Montagem", 0, false));
-		machines.add(new Machine("Retífica Cilíndrica", 108, "", "Eixos", 0, false));
-		machines.add(new Machine("Torno Mecânico", 109, "", "Peças Torneadas", 0, false));
-		machines.add(new Machine("Serra de Fita", 110, "", "Corte de Materiais", 0, false));
-		
+		machines.add(new Machine("Injetora", 905, "", "Escalonado Duplo", 0, false));
+		machines.add(new Machine("Injetora", 638, "", "Corpinho 1/2 3/4", 0, false));
+		machines.add(new Machine("Injetora", 639, "", "Flange 7/8", 0, true));
+		machines.add(new Machine("Injetora", 648, "", "Terminal de saida", 0, false));
+		machines.add(new Machine("Injetora", 644, "", "Manipulo", 0, true));
+		machines.add(new Machine("Injetora", 643, "", "PMG", 0, true));
+		machines.add(new Machine("Injetora", 303, "", "Junta V8", 0, false));
+		machines.add(new Machine("Injetora", 408, "", "Ved cx dagua 30mm", 0, false));
+		machines.add(new Machine("injetora", 407, "", "Haste", 0, false));
+		machines.add(new Machine("Injetora", 520, "", "Abracadeira torn", 0, false));
+		machines.add(new Machine("Injetora", 32002, "", "Boia BB ", 0, false));
+		machines.add(new Machine("Injetora", 1503, "", "Corpo torneira jard", 0, false));
+		machines.add(new Machine("Injetora", 1817, "", "Escalonado Simples", 0, false));
+		machines.add(new Machine("Injetora", 1816, "", "Adaptador", 0, false));
 		return machines;
 	}
 	

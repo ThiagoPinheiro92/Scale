@@ -6,8 +6,9 @@ import java.util.*;
 
 public class MachineDistributor {
 	
-	private static class OperatorLoad {
+	private static class OperatorAssignment {
 		boolean hasDifficult = false;
+		List<Integer> assignedIndices = new ArrayList<>();
 		int mediumCount = 0;
 		int easyCount = 0;
 	}
@@ -16,97 +17,120 @@ public class MachineDistributor {
 		clearCurrentDistribution(machines);
 		Collections.shuffle(operators);
 		
-		Map<String, OperatorLoad> operatorLoads = new HashMap<>();
+		Map<String, OperatorAssignment> assignments = new HashMap<>();
 		
-		// Fase 1: Atribui máquinas difíceis
-		for (Machine machine : machines) {
+		// 1. Atribuição prioritária de máquinas difíceis
+		assignDifficultMachines(machines, operators, assignments);
+		
+		// 2. Atribuição considerando vizinhança
+		assignWithNeighborhoodCheck(machines, operators, assignments);
+	}
+	
+	private void assignDifficultMachines(List<Machine> machines,
+	List<Operator> operators,
+	Map<String, OperatorAssignment> assignments) {
+		for (int i = 0; i < machines.size(); i++) {
+			Machine machine = machines.get(i);
 			if (machine.getDifficulty() == 3) {
-				assignMachine(machine, operators, operatorLoads, true);
+				assignToEligibleOperator(machines, i, operators, assignments, true);
 			}
 		}
-		
-		// Fase 2: Atribui máquinas médias
-		for (Machine machine : machines) {
+	}
+	
+	private void assignWithNeighborhoodCheck(List<Machine> machines,
+	List<Operator> operators,
+	Map<String, OperatorAssignment> assignments) {
+		// Primeiro atribui médias considerando vizinhança
+		for (int i = 0; i < machines.size(); i++) {
+			Machine machine = machines.get(i);
 			if (machine.getDifficulty() == 2 && machine.getOperator().isEmpty()) {
-				assignMachine(machine, operators, operatorLoads, false);
+				assignToEligibleOperator(machines, i, operators, assignments, false);
 			}
 		}
 		
-		// Fase 3: Atribui máquinas fáceis (com fallback)
-		for (Machine machine : machines) {
+		// Depois atribui fáceis considerando vizinhança
+		for (int i = 0; i < machines.size(); i++) {
+			Machine machine = machines.get(i);
 			if (machine.getDifficulty() == 1 && machine.getOperator().isEmpty()) {
-				if (!assignMachine(machine, operators, operatorLoads, false)) {
-					// Fallback: Se não encontrou operador ideal, atribui a qualquer operador disponível
-					assignToAnyOperator(machine, operators, operatorLoads);
-				}
+				assignToEligibleOperator(machines, i, operators, assignments, false);
 			}
 		}
 	}
 	
-	private boolean assignMachine(Machine machine,
+	private void assignToEligibleOperator(List<Machine> machines,
+	int currentIndex,
 	List<Operator> operators,
-	Map<String, OperatorLoad> operatorLoads,
+	Map<String, OperatorAssignment> assignments,
 	boolean isDifficult) {
+		Machine machine = machines.get(currentIndex);
+		
 		for (Operator operator : operators) {
-			OperatorLoad load = operatorLoads.getOrDefault(operator.getName(), new OperatorLoad());
+			OperatorAssignment assignment = assignments.getOrDefault(
+			operator.getName(),
+			new OperatorAssignment()
+			);
 			
-			if (canAssign(machine, operator, load, isDifficult)) {
+			if (canAssign(machine, operator, assignment, isDifficult)) {
+				// Verifica vizinhança para máquinas não-difíceis
+				if (!isDifficult && !assignment.assignedIndices.isEmpty()) {
+					boolean isNearby = false;
+					for (int assignedIndex : assignment.assignedIndices) {
+						if (Math.abs(assignedIndex - currentIndex) <= 2) { // 2 máquinas de distância
+							isNearby = true;
+							break;
+						}
+					}
+					if (!isNearby) continue;
+				}
+				
 				machine.setOperator(operator.getName());
-				updateLoad(machine, load);
-				operatorLoads.put(operator.getName(), load);
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	private void assignToAnyOperator(Machine machine,
-	List<Operator> operators,
-	Map<String, OperatorLoad> operatorLoads) {
-		for (Operator operator : operators) {
-			OperatorLoad load = operatorLoads.getOrDefault(operator.getName(), new OperatorLoad());
-			
-			// Regras mais flexíveis para fallback
-			if (!load.hasDifficult) {
-				machine.setOperator(operator.getName());
-				load.easyCount++;
-				operatorLoads.put(operator.getName(), load);
-				return;
+				updateAssignment(machine, assignment, currentIndex);
+				assignments.put(operator.getName(), assignment);
+				break;
 			}
 		}
 	}
 	
 	private boolean canAssign(Machine machine,
 	Operator operator,
-	OperatorLoad load,
+	OperatorAssignment assignment,
 	boolean isDifficult) {
 		if (isDifficult) {
 			return operator.canHandleDifficultMachines() &&
-			!load.hasDifficult &&
-			load.mediumCount == 0 &&
-			load.easyCount == 0;
+			!assignment.hasDifficult &&
+			assignment.mediumCount == 0 &&
+			assignment.easyCount == 0;
 			} else {
 			switch (machine.getDifficulty()) {
 				case 2: // Média
-				return !load.hasDifficult &&
-				load.mediumCount < 1 &&
-				load.easyCount <= 1; // Permite 1 média + 1 fácil
+				return !assignment.hasDifficult &&
+				assignment.mediumCount < 2 &&
+				(assignment.easyCount == 0 || assignment.mediumCount == 0);
 				
 				case 1: // Fácil
-				return !load.hasDifficult &&
-				(load.easyCount < 3 &&
-				(load.mediumCount == 0 || load.easyCount < 1));
+				return !assignment.hasDifficult &&
+				assignment.easyCount < 3 &&
+				(assignment.mediumCount == 0 || assignment.easyCount < 1);
 			}
 		}
 		return false;
 	}
 	
-	private void updateLoad(Machine machine, OperatorLoad load) {
+	private void updateAssignment(Machine machine,
+	OperatorAssignment assignment,
+	int index) {
 		switch (machine.getDifficulty()) {
-			case 3: load.hasDifficult = true; break;
-			case 2: load.mediumCount++; break;
-			case 1: load.easyCount++; break;
+			case 3:
+			assignment.hasDifficult = true;
+			break;
+			case 2:
+			assignment.mediumCount++;
+			break;
+			case 1:
+			assignment.easyCount++;
+			break;
 		}
+		assignment.assignedIndices.add(index);
 	}
 	
 	private void clearCurrentDistribution(List<Machine> machines) {
