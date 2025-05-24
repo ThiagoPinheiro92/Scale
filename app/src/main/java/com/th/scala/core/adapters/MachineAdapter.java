@@ -1,15 +1,17 @@
-package com.th.scala;
+package com.th.scala.core.adapters;
 
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.AdapterView;
+import com.th.scala.core.models.Machine;
 import java.util.List;
+import com.th.scala.R;
+import android.widget.ArrayAdapter;
 
 public class MachineAdapter extends BaseAdapter {
 	private Context context;
@@ -51,53 +53,51 @@ public class MachineAdapter extends BaseAdapter {
 		}
 		
 		Machine machine = machineList.get(position);
-		updateMachineInfo(holder, machine);
-		setupDifficultySpinner(holder, machine, position);
+		bindMachineData(holder, machine, position);
+		setupDifficultySpinner(holder.difficultySpinner, machine, position);
 		
 		return convertView;
 	}
 	
-	private void updateMachineInfo(ViewHolder holder, Machine machine) {
-		String info = String.format("%s (%d)\nProd: %s\nDif: %s\nOper: %s",
+	private void bindMachineData(ViewHolder holder, Machine machine, int position) {
+		String info = String.format("%s (%d)\nProduto: %s\nOperador: %s",
 		machine.getName(),
 		machine.getNumber(),
 		machine.getProduct(),
-		getDifficultyLetter(machine.getDifficulty()),
-		machine.getOperator());
+		machine.getOperator().isEmpty() ? "Não atribuído" : machine.getOperator());
 		
 		holder.machineInfo.setText(info);
-		holder.machinePosition.setText(String.valueOf(machine.getPosition()));
+		holder.machinePosition.setText(String.valueOf(position + 1));
 	}
 	
-	private void setupDifficultySpinner(ViewHolder holder, Machine machine, int position) {
+	private void setupDifficultySpinner(Spinner spinner, Machine machine, int position) {
 		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
 		context,
 		R.array.difficulty_levels,
 		android.R.layout.simple_spinner_item);
 		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		holder.difficultySpinner.setAdapter(adapter);
-		holder.difficultySpinner.setSelection(machine.getDifficulty() - 1);
+		spinner.setAdapter(adapter);
 		
-		holder.difficultySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+		// Define a seleção atual baseada na dificuldade da máquina
+		spinner.setSelection(machine.getDifficulty() > 0 ? machine.getDifficulty() - 1 : 0);
+		
+		// Listener para salvar a dificuldade quando alterada
+		spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+				// +1 porque os itens do Spinner começam em 0 (Fácil=1, Médio=2, Difícil=3)
 				machine.setDifficulty(pos + 1);
-				updateMachineInfo(holder, machine);
 			}
 			
 			@Override
 			public void onNothingSelected(AdapterView<?> parent) {
+				// Não faz nada
 			}
 		});
 	}
 	
-	private String getDifficultyLetter(int difficulty) {
-		switch (difficulty) {
-			case 3: return "D (Difícil)";
-			case 2: return "M (Médio)";
-			case 1: return "F (Fácil)";
-			default: return "?";
-		}
+	public List<Machine> getMachines() {
+		return machineList;
 	}
 	
 	private static class ViewHolder {

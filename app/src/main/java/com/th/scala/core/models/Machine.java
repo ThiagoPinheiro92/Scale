@@ -1,23 +1,21 @@
-package com.th.scala;
+package com.th.scala.core.models;
 
 public class Machine {
-	private String name;
-	private int number;
+	private final String name;
+	private final int number;
 	private String operator;
-	private String product;
+	private final String product;
 	private int difficulty;
-	private boolean requiresSpecialTraining;
-	private int position; // Posição física da máquina
+	private final boolean requiresSpecialTraining;
 	
 	public Machine(String name, int number, String operator, String product,
-	int difficulty, boolean requiresSpecialTraining, int position) {
+	int difficulty, boolean requiresSpecialTraining) {
 		this.name = name;
 		this.number = number;
 		this.operator = operator;
 		this.product = product;
 		this.difficulty = difficulty;
 		this.requiresSpecialTraining = requiresSpecialTraining;
-		this.position = position;
 	}
 	
 	// Getters e Setters
@@ -27,9 +25,7 @@ public class Machine {
 	public String getProduct() { return product; }
 	public int getDifficulty() { return difficulty; }
 	public boolean requiresSpecialTraining() { return requiresSpecialTraining; }
-	public int getPosition() { return position; }
 	
 	public void setOperator(String operator) { this.operator = operator; }
-	public void setProduct(String product) { this.product = product; }
 	public void setDifficulty(int difficulty) { this.difficulty = difficulty; }
 }
