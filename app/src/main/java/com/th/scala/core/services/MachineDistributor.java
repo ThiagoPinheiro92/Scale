@@ -19,11 +19,19 @@ public class MachineDistributor {
 		
 		Map<String, OperatorAssignment> assignments = new HashMap<>();
 		
-		// 1. Atribuição prioritária de máquinas difíceis
+		// Fase 1: Atribuição prioritária de máquinas difíceis
 		assignDifficultMachines(machines, operators, assignments);
 		
-		// 2. Atribuição considerando vizinhança
-		assignWithNeighborhoodCheck(machines, operators, assignments);
+		// Fase 2: Atribuição considerando vizinhança (2 tentativas)
+		for (int attempt = 0; attempt < 2; attempt++) {
+			assignWithNeighborhoodCheck(machines, operators, assignments);
+			if (allMachinesAssigned(machines)) {
+				return;
+			}
+		}
+		
+		// Fase 3: Fallback - garante atribuição para máquinas restantes
+		assignRemainingMachines(machines, operators, assignments);
 	}
 	
 	private void assignDifficultMachines(List<Machine> machines,
@@ -91,6 +99,35 @@ public class MachineDistributor {
 		}
 	}
 	
+	private void assignRemainingMachines(List<Machine> machines,
+	List<Operator> operators,
+	Map<String, OperatorAssignment> assignments) {
+		for (int i = 0; i < machines.size(); i++) {
+			Machine machine = machines.get(i);
+			if (machine.getOperator().isEmpty()) {
+				// Relaxa as regras para atribuição forçada
+				for (Operator operator : operators) {
+					OperatorAssignment assignment = assignments.getOrDefault(
+					operator.getName(),
+					new OperatorAssignment()
+					);
+					
+					// Fallback rules:
+					// 1. Operadores com máquinas difíceis só podem pegar outras difíceis
+					// 2. Para outras máquinas, qualquer operador pode pegar
+					if ((machine.getDifficulty() == 3 && operator.canHandleDifficultMachines()) ||
+					(machine.getDifficulty() != 3 && !assignment.hasDifficult)) {
+						
+						machine.setOperator(operator.getName());
+						updateAssignment(machine, assignment, i);
+						assignments.put(operator.getName(), assignment);
+						break;
+					}
+				}
+			}
+		}
+	}
+	
 	private boolean canAssign(Machine machine,
 	Operator operator,
 	OperatorAssignment assignment,
@@ -131,6 +168,15 @@ public class MachineDistributor {
 			break;
 		}
 		assignment.assignedIndices.add(index);
+	}
+	
+	private boolean allMachinesAssigned(List<Machine> machines) {
+		for (Machine machine : machines) {
+			if (machine.getOperator().isEmpty()) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	private void clearCurrentDistribution(List<Machine> machines) {
