@@ -13,20 +13,20 @@ public class MachineFactory {
 		// Formato: new Machine(nome, número, operador, produto, dificuldade, éPesada)
 		
 		// Máquinas de exemplo - nomes genéricos
-		machines.add(new Machine("Injetora", 905, "", "Escalonado Duplo", 0, false));
-		machines.add(new Machine("Injetora", 638, "", "Corpinho 1/2 3/4", 0, false));
-		machines.add(new Machine("Injetora", 639, "", "Flange 7/8", 0, true));
-		machines.add(new Machine("Injetora", 648, "", "Terminal de saida", 0, false));
-		machines.add(new Machine("Injetora", 644, "", "Manipulo", 0, true));
-		machines.add(new Machine("Injetora", 643, "", "PMG", 0, true));
-		machines.add(new Machine("Injetora", 303, "", "Junta V8", 0, false));
-		machines.add(new Machine("Injetora", 408, "", "Ved cx dagua 30mm", 0, false));
-		machines.add(new Machine("injetora", 407, "", "Haste", 0, false));
-		machines.add(new Machine("Injetora", 520, "", "Abracadeira torn", 0, false));
-		machines.add(new Machine("Injetora", 32002, "", "Boia BB ", 0, false));
-		machines.add(new Machine("Injetora", 1503, "", "Corpo torneira jard", 0, false));
-		machines.add(new Machine("Injetora", 1817, "", "Escalonado Simples", 0, false));
-		machines.add(new Machine("Injetora", 1816, "", "Adaptador", 0, false));
+		machines.add(new Machine("Injetora", 905, "", "Escalonado Duplo", 1, false));
+		machines.add(new Machine("Injetora", 638, "", "Corpinho 1/2 3/4", 1, false));
+		machines.add(new Machine("Injetora", 639, "", "Flange 7/8", 1, true));
+		machines.add(new Machine("Injetora", 648, "", "Terminal de saida", 1, false));
+		machines.add(new Machine("Injetora", 644, "", "Manipulo", 1, true));
+		machines.add(new Machine("Injetora", 643, "", "PMG", 1, true));
+		machines.add(new Machine("Injetora", 303, "", "Junta V8", 1, false));
+		machines.add(new Machine("Injetora", 408, "", "Ved cx dagua 30mm", 1, false));
+		machines.add(new Machine("injetora", 407, "", "Haste", 1, false));
+		machines.add(new Machine("Injetora", 520, "", "Abracadeira torn", 1, false));
+		machines.add(new Machine("Injetora", 32002, "", "Boia BB ", 1, false));
+		machines.add(new Machine("Injetora", 1503, "", "Corpo torneira jard", 1, false));
+		machines.add(new Machine("Injetora", 1817, "", "Escalonado Simples", 1, false));
+		machines.add(new Machine("Injetora", 1816, "", "Adaptador", 1, false));
 		return machines;
 	}
 	

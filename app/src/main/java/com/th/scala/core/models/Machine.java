@@ -28,4 +28,5 @@ public class Machine {
 	
 	public void setOperator(String operator) { this.operator = operator; }
 	public void setDifficulty(int difficulty) { this.difficulty = difficulty; }
+	
 }

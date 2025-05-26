@@ -56,11 +56,12 @@ public class MainActivity extends Activity {
 	
 	private List<Operator> createOperators() {
 		List<Operator> operators = new ArrayList<>();
-		operators.add(new Operator("Operador 1", true, 4));
-		operators.add(new Operator("Operador 2", false, 3));
-		operators.add(new Operator("Operador 3", true, 4));
-		operators.add(new Operator("Operador 4", false, 3));
-		operators.add(new Operator("Operador 5", true, 4));
+		operators.add(new Operator("Operador 1", true, 3));
+		operators.add(new Operator("Operador 2", true, 3));
+		operators.add(new Operator("Operador 3", true, 3));
+		operators.add(new Operator("Operador 4", true, 3));
+		operators.add(new Operator("Operador 5", true, 3));
+		operators.add(new Operator("Operador 6", true, 3)); 
 		return operators;
 	}
 }
