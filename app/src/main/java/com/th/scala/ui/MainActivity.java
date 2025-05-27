@@ -3,8 +3,10 @@ package com.th.scala.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -27,16 +29,20 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
-// Renaming the final version incorporating history and menu
+// Renaming the final version incorporating history, menu, and persistent order
 public class MainActivity extends Activity {
 	
 	private static final String HISTORY_FILENAME = "distribution_history.txt";
 	private static final String TAG = "MainActivity";
+	private static final String PREFS_NAME = "OperatorOrderPrefs";
+	private static final String PREF_KEY_OPERATOR_ORDER = "lastOperatorOrder";
 	
 	private MachineAdapter adapter;
 	private MachineDistributor distributor;
@@ -46,25 +52,27 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		// Assuming you have a layout file named activity_main.xml
-		// Make sure it includes a Toolbar if you want the menu there, or it will use the default ActionBar
 		setContentView(R.layout.activity_main);
 		
 		// Initialize services
 		distributor = new MachineDistributor();
 		factory = new MachineFactory();
 		
-		// Initialize the operator list once
-		operatorList = createInitialOperators();
+		// Load the last operator order or create the initial one
+		operatorList = loadOperatorOrder(this);
+		if (operatorList == null || operatorList.isEmpty()) {
+			operatorList = createInitialOperators();
+			Log.i(TAG, "Nenhuma ordem salva encontrada, usando ordem inicial.");
+			} else {
+			Log.i(TAG, "Ordem dos operadores carregada: " + getOperatorNames(operatorList));
+		}
 		
 		// Configura ListView
-		// Ensure R.id.list_view exists in your activity_main.xml
 		ListView listView = (ListView) findViewById(R.id.list_view);
 		adapter = new MachineAdapter(this, factory.createDefaultMachines());
 		listView.setAdapter(adapter);
 		
 		// Configura botão de distribuição
-		// Ensure R.id.distribute_button exists in your activity_main.xml
 		Button distributeBtn = (Button) findViewById(R.id.distribute_button);
 		distributeBtn.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -72,6 +80,7 @@ public class MainActivity extends Activity {
 				// 1. Rotate the operator list before distribution
 				if (operatorList != null && !operatorList.isEmpty()) {
 					Collections.rotate(operatorList, -1);
+					Log.i(TAG, "Ordem rotacionada: " + getOperatorNames(operatorList));
 				}
 				
 				List<Machine> currentMachines = adapter.getMachines();
@@ -82,7 +91,10 @@ public class MainActivity extends Activity {
 				// 3. Save the distribution result to history file
 				saveDistributionHistory(MainActivity.this, currentMachines, operatorList);
 				
-				// 4. Update the UI
+				// 4. Save the current operator order for persistence
+				saveOperatorOrder(MainActivity.this, operatorList);
+				
+				// 5. Update the UI
 				adapter.notifyDataSetChanged();
 				Toast.makeText(MainActivity.this, "Máquinas distribuídas e histórico salvo!", Toast.LENGTH_SHORT).show();
 			}
@@ -94,17 +106,13 @@ public class MainActivity extends Activity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
-		// Assuming you saved the menu file as res/menu/menu_main.xml
 		inflater.inflate(R.menu.menu_main, menu);
 		return true;
 	}
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle item selection
-		// Use if-else if structure if you add more menu items
 		if (item.getItemId() == R.id.action_view_history) {
-			// Create Intent to launch HistoryActivity
 			Intent intent = new Intent(this, HistoryActivity.class);
 			startActivity(intent);
 			return true;
@@ -113,7 +121,49 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-	// --- Operator and History Methods ---
+	// --- Operator Order Persistence ---
+	
+	private void saveOperatorOrder(Context context, List<Operator> operators) {
+		if (operators == null || operators.isEmpty()) {
+			return;
+		}
+		// Convert list of operator names to a single comma-separated string
+		String orderString = operators.stream()
+		.map(Operator::getName)
+		.collect(Collectors.joining(","));
+		
+		SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+		SharedPreferences.Editor editor = prefs.edit();
+		editor.putString(PREF_KEY_OPERATOR_ORDER, orderString);
+		editor.apply(); // Use apply() for asynchronous saving
+		Log.i(TAG, "Ordem dos operadores salva: " + orderString);
+	}
+	
+	private List<Operator> loadOperatorOrder(Context context) {
+		SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+		String savedOrder = prefs.getString(PREF_KEY_OPERATOR_ORDER, null);
+		
+		if (savedOrder == null || savedOrder.isEmpty()) {
+			return null; // No saved order found
+		}
+		
+		// Split the string back into names
+		List<String> operatorNames = Arrays.asList(savedOrder.split(","));
+		
+		// Reconstruct the Operator list based on the saved order of names
+		// This assumes the Operator objects themselves don't need saving, only their order.
+		// We create new Operator objects based on the names in the saved order.
+		List<Operator> loadedOperators = new ArrayList<>();
+		for (String name : operatorNames) {
+			// Find the corresponding operator details (availability, capacity) if needed
+			// For simplicity, we create new ones with default values matching createInitialOperators
+			// A more robust approach might involve saving/loading operator details too, or having a master list.
+			loadedOperators.add(new Operator(name, true, 3)); // Assuming default capacity 3
+		}
+		return loadedOperators;
+	}
+	
+	// --- Initial Operator Creation and History Methods ---
 	
 	private List<Operator> createInitialOperators() {
 		List<Operator> operators = new ArrayList<>();
@@ -163,14 +213,7 @@ public class MainActivity extends Activity {
 		if (operators == null || operators.isEmpty()) {
 			return "[]";
 		}
-		StringBuilder names = new StringBuilder("[");
-		for (int i = 0; i < operators.size(); i++) {
-			names.append(operators.get(i).getName());
-			if (i < operators.size() - 1) {
-				names.append(", ");
-			}
-		}
-		names.append("]");
-		return names.toString();
+		// Use stream for cleaner joining
+		return "[" + operators.stream().map(Operator::getName).collect(Collectors.joining(", ")) + "]";
 	}
 }
