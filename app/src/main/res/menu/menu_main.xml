@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- menu_main.xml (Corrigido) -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<item
+android:id="@+id/action_view_history"
+android:orderInCategory="100"
+android:title="Ver Histórico"
+android:showAsAction="never" />
+<!-- Alterado de app:showAsAction para android:showAsAction -->
+</menu>
