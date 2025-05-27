@@ -1,32 +1,50 @@
 package com.th.scala.core.models;
 
 public class Machine {
-	private final String name;
-	private final int number;
+	private String name;
+	private int number;
 	private String operator;
-	private final String product;
-	private int difficulty;
-	private final boolean requiresSpecialTraining;
+	private String product;
+	private int difficulty; // 1: Easy, 2: Medium, 3: Difficult
+	private boolean heavy;
+	private boolean isOn; // Added state field, default to true (on)
 	
-	public Machine(String name, int number, String operator, String product,
-	int difficulty, boolean requiresSpecialTraining) {
+	// Constructor updated to initialize isOn (defaulting to true)
+	public Machine(String name, int number, String operator, String product, int difficulty, boolean heavy) {
 		this.name = name;
 		this.number = number;
 		this.operator = operator;
 		this.product = product;
 		this.difficulty = difficulty;
-		this.requiresSpecialTraining = requiresSpecialTraining;
+		this.heavy = heavy;
+		this.isOn = true; // Default state is ON
 	}
 	
-	// Getters e Setters
+	// Getters
 	public String getName() { return name; }
 	public int getNumber() { return number; }
 	public String getOperator() { return operator; }
 	public String getProduct() { return product; }
 	public int getDifficulty() { return difficulty; }
-	public boolean requiresSpecialTraining() { return requiresSpecialTraining; }
+	public boolean isHeavy() { return heavy; }
+	public boolean isOn() { return isOn; } // Getter for the state
 	
-	public void setOperator(String operator) { this.operator = operator; }
-	public void setDifficulty(int difficulty) { this.difficulty = difficulty; }
+	// Setters
+	public void setOperator(String operator) {
+		this.operator = (operator == null || operator.trim().isEmpty()) ? "" : operator;
+	}
+	public void setOn(boolean on) { // Setter for the state
+		isOn = on;
+	}
 	
+	@Override
+	public String toString() {
+		return "Machine{" +
+		"name=\'" + name + "\'" +
+		", number=" + number +
+		", operator=\'" + (operator.isEmpty() ? "<none>" : operator) + "\'" +
+		", difficulty=" + difficulty +
+		", isOn=" + isOn + // Added state to toString
+		'}';
+	}
 }

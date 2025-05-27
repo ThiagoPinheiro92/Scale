@@ -9,63 +9,107 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+// Distributor adapted to only consider active (isOn=true) machines
 public class MachineDistributor {
 	
 	private static final String NOT_ASSIGNED = "(não atribuído)";
 	
-	public void distributeMachines(List<Machine> machines, List<Operator> rotatedOperators) {
-		clearCurrentDistribution(machines);
+	// Main distribution method
+	public void distributeMachines(List<Machine> allMachines, List<Operator> rotatedOperators) {
+		// 1. Clear previous assignments from ALL machines (even inactive ones)
+		clearCurrentDistribution(allMachines);
 		
-		long easyCount = machines.stream().filter(m -> m.getDifficulty() == 1).count();
-		long mediumCount = machines.stream().filter(m -> m.getDifficulty() == 2).count();
-		long difficultCount = machines.stream().filter(m -> m.getDifficulty() == 3).count();
-		int totalMachines = machines.size();
+		// 2. Filter to get only machines that are currently ON
+		List<Machine> activeMachines = allMachines.stream()
+		.filter(Machine::isOn)
+		.collect(Collectors.toList());
 		
-		if (mediumCount == 0 && difficultCount == 0 && easyCount == totalMachines && totalMachines == 14) {
-			System.out.println("--- Executando Cenário: Tudo Fácil (Rotacionado) ---");
-			distributeAllEasyScenarioRotated(machines, rotatedOperators);
-			} else if (mediumCount >= 1 && difficultCount == 0) {
-			System.out.println("--- Executando Cenário: Pelo Menos Uma Média (Rotacionado) ---");
-			distributeOneMediumScenarioRotated(machines, rotatedOperators);
-			} else if (difficultCount >= 1) {
-			System.out.println("--- Executando Cenário: Pelo Menos Uma Difícil (Rotacionado e Corrigido) ---");
-			distributeOneDifficultScenarioRotatedCorrected(machines, rotatedOperators);
-			} else {
-			System.out.println("--- Cenário de distribuição não reconhecido. Atribuindo restantes a 'não atribuído'. ---");
-			assignRemainingToNotAssigned(machines);
+		System.out.println("--- Iniciando Distribuição --- ");
+		System.out.println("Total de máquinas: " + allMachines.size());
+		System.out.println("Máquinas LIGADAS consideradas: " + activeMachines.size());
+		
+		// If no machines are active, there's nothing to distribute
+		if (activeMachines.isEmpty()) {
+			System.out.println("Nenhuma máquina ativa para distribuir.");
+			// Ensure remaining inactive machines are marked as unassigned if needed (already done by clear)
+			// assignRemainingToNotAssigned(allMachines); // Might be redundant if clear works
+			return;
 		}
+		
+		// 3. Calculate counts based ONLY on active machines
+		long easyCount = activeMachines.stream().filter(m -> m.getDifficulty() == 1).count();
+		long mediumCount = activeMachines.stream().filter(m -> m.getDifficulty() == 2).count();
+		long difficultCount = activeMachines.stream().filter(m -> m.getDifficulty() == 3).count();
+		int totalActiveMachines = activeMachines.size();
+		
+		System.out.println("Ativas - Fáceis: " + easyCount + ", Médias: " + mediumCount + ", Difíceis: " + difficultCount);
+		
+		// 4. Determine scenario based on ACTIVE machines and call the appropriate method
+		// Note: The original rule for easy (totalMachines == 14) might need review
+		// if you want it to apply when *all active* machines are easy, regardless of count.
+		// For now, keeping the original condition but applying it to active counts.
+		if (mediumCount == 0 && difficultCount == 0 && easyCount == totalActiveMachines /* && totalActiveMachines == 14 */) {
+			// Condition `totalActiveMachines == 14` kept for now, review if needed
+			System.out.println("--- Executando Cenário: Todas Ativas Fáceis (Rotacionado) ---");
+			distributeAllEasyScenarioRotated(activeMachines, rotatedOperators);
+			} else if (mediumCount >= 1 && difficultCount == 0) {
+			System.out.println("--- Executando Cenário: Pelo Menos Uma Média Ativa (Rotacionado) ---");
+			distributeOneMediumScenarioRotated(activeMachines, rotatedOperators);
+			} else if (difficultCount >= 1) {
+			System.out.println("--- Executando Cenário: Pelo Menos Uma Difícil Ativa (Rotacionado e Corrigido) ---");
+			distributeOneDifficultScenarioRotatedCorrected(activeMachines, rotatedOperators);
+			} else {
+			// Fallback: If active machines don't fit a specific scenario, distribute them equitably
+			System.out.println("--- Cenário específico não reconhecido para máquinas ativas. Distribuindo equitativamente. ---");
+			assignRemainingEquitably(activeMachines, rotatedOperators, 0);
+		}
+		
+		// 5. Mark any remaining machines (active or inactive) that weren't assigned as NOT_ASSIGNED
+		// This catches machines that might have been active but didn't get assigned by the scenario logic
+		// and ensures inactive machines remain unassigned.
+		assignRemainingToNotAssigned(allMachines);
+		System.out.println("--- Distribuição Concluída --- ");
 	}
 	
-	// Cenário Fácil: Usa a ordem da lista rotacionada
-	private void distributeAllEasyScenarioRotated(List<Machine> machines, List<Operator> rotatedOperators) {
+	// --- Scenario Methods (Now operate on activeMachines) ---
+	
+	private void distributeAllEasyScenarioRotated(List<Machine> activeMachines, List<Operator> rotatedOperators) {
 		int assignedCount = 0;
 		int opIndex = 0;
 		int numOperators = rotatedOperators.size();
 		
+		// Rule requires 5 operators for 14 machines (3,3,3,3,2)
+		// Adapt if the rule changes for different counts of easy machines
 		if (numOperators < 5) {
 			System.out.println("Aviso: Menos de 5 operadores disponíveis para o cenário fácil.");
-			assignRemainingEquitably(machines, rotatedOperators, 0);
+			assignRemainingEquitably(activeMachines, rotatedOperators, 0);
+			return;
+		}
+		if (activeMachines.size() != 14) {
+			System.out.println("Aviso: Cenário fácil chamado com " + activeMachines.size() + " máquinas ativas (esperado 14). Distribuindo equitativamente.");
+			assignRemainingEquitably(activeMachines, rotatedOperators, 0);
 			return;
 		}
 		
-		assignedCount += assignMachinesToOperator(machines, getOperatorAtIndex(rotatedOperators, opIndex++), 3, assignedCount);
-		assignedCount += assignMachinesToOperator(machines, getOperatorAtIndex(rotatedOperators, opIndex++), 3, assignedCount);
-		assignedCount += assignMachinesToOperator(machines, getOperatorAtIndex(rotatedOperators, opIndex++), 3, assignedCount);
-		assignedCount += assignMachinesToOperator(machines, getOperatorAtIndex(rotatedOperators, opIndex++), 3, assignedCount);
-		assignedCount += assignMachinesToOperator(machines, getOperatorAtIndex(rotatedOperators, opIndex++), 2, assignedCount);
+		// Apply the 3,3,3,3,2 distribution to the active machines
+		assignedCount += assignMachinesToOperator(activeMachines, getOperatorAtIndex(rotatedOperators, opIndex++), 3, assignedCount);
+		assignedCount += assignMachinesToOperator(activeMachines, getOperatorAtIndex(rotatedOperators, opIndex++), 3, assignedCount);
+		assignedCount += assignMachinesToOperator(activeMachines, getOperatorAtIndex(rotatedOperators, opIndex++), 3, assignedCount);
+		assignedCount += assignMachinesToOperator(activeMachines, getOperatorAtIndex(rotatedOperators, opIndex++), 3, assignedCount);
+		assignedCount += assignMachinesToOperator(activeMachines, getOperatorAtIndex(rotatedOperators, opIndex++), 2, assignedCount);
 		
-		assignRemainingToNotAssigned(machines);
+		// assignRemainingToNotAssigned(activeMachines); // Handled globally now
 	}
 	
-	// Cenário Médio: Adapta a lógica para usar índices da lista rotacionada
-	private void distributeOneMediumScenarioRotated(List<Machine> machines, List<Operator> rotatedOperators) {
+	private void distributeOneMediumScenarioRotated(List<Machine> activeMachines, List<Operator> rotatedOperators) {
 		List<Machine> assignedInThisScenario = new ArrayList<>();
-		Set<Operator> operatorsUsedInThisScenario = new HashSet<>(); // Track used operators
+		Set<Operator> operatorsUsedInThisScenario = new HashSet<>();
 		int numOperators = rotatedOperators.size();
 		
+		// Rule requires 6 operators
 		if (numOperators < 6) {
 			System.out.println("Aviso: Menos de 6 operadores disponíveis para o cenário médio.");
-			assignRemainingEquitably(machines, rotatedOperators, 0);
+			assignRemainingEquitably(activeMachines, rotatedOperators, 0);
 			return;
 		}
 		
@@ -76,58 +120,45 @@ public class MachineDistributor {
 		Operator opRotated4 = getOperatorAtIndex(rotatedOperators, 4);
 		Operator opRotated5 = getOperatorAtIndex(rotatedOperators, 5);
 		
-		// 111 (fáceis) -> Operador no índice 0
-		assignSpecificMachines(machines, opRotated0, 1, 3, 0, assignedInThisScenario, operatorsUsedInThisScenario);
-		
-		// (3 média) + (3 adjacente fácil) -> Operador no índice 2
-		int mediumMachineIndex3 = findFirstMachineByDifficultyAndUnassigned(machines, 2, 0, assignedInThisScenario);
+		// Apply rules using only activeMachines
+		assignSpecificMachines(activeMachines, opRotated0, 1, 3, 0, assignedInThisScenario, operatorsUsedInThisScenario);
+		int mediumMachineIndex3 = findFirstMachineByDifficultyAndUnassigned(activeMachines, 2, 0, assignedInThisScenario);
 		if (mediumMachineIndex3 != -1) {
-			assignOperatorToMachine(machines.get(mediumMachineIndex3), opRotated2, assignedInThisScenario, operatorsUsedInThisScenario);
-			int adjacentEasyIndex3 = findAdjacentMachineByDifficultyAndUnassigned(machines, mediumMachineIndex3, 1, assignedInThisScenario);
+			assignOperatorToMachine(activeMachines.get(mediumMachineIndex3), opRotated2, assignedInThisScenario, operatorsUsedInThisScenario);
+			int adjacentEasyIndex3 = findAdjacentMachineByDifficultyAndUnassigned(activeMachines, mediumMachineIndex3, 1, assignedInThisScenario);
 			if (adjacentEasyIndex3 != -1) {
-				assignOperatorToMachine(machines.get(adjacentEasyIndex3), opRotated2, assignedInThisScenario, operatorsUsedInThisScenario);
+				assignOperatorToMachine(activeMachines.get(adjacentEasyIndex3), opRotated2, assignedInThisScenario, operatorsUsedInThisScenario);
 			}
 		}
-		
-		// (4 média) + (4 adjacente fácil) -> Operador no índice 3
-		int mediumMachineIndex4 = findFirstMachineByDifficultyAndUnassigned(machines, 2, 0, assignedInThisScenario);
+		int mediumMachineIndex4 = findFirstMachineByDifficultyAndUnassigned(activeMachines, 2, 0, assignedInThisScenario);
 		if (mediumMachineIndex4 != -1) {
-			assignOperatorToMachine(machines.get(mediumMachineIndex4), opRotated3, assignedInThisScenario, operatorsUsedInThisScenario);
-			int adjacentEasyIndex4 = findAdjacentMachineByDifficultyAndUnassigned(machines, mediumMachineIndex4, 1, assignedInThisScenario);
+			assignOperatorToMachine(activeMachines.get(mediumMachineIndex4), opRotated3, assignedInThisScenario, operatorsUsedInThisScenario);
+			int adjacentEasyIndex4 = findAdjacentMachineByDifficultyAndUnassigned(activeMachines, mediumMachineIndex4, 1, assignedInThisScenario);
 			if (adjacentEasyIndex4 != -1) {
-				assignOperatorToMachine(machines.get(adjacentEasyIndex4), opRotated3, assignedInThisScenario, operatorsUsedInThisScenario);
+				assignOperatorToMachine(activeMachines.get(adjacentEasyIndex4), opRotated3, assignedInThisScenario, operatorsUsedInThisScenario);
 			}
 		}
-		
-		// 222 (fáceis restantes) -> Operador no índice 1
-		assignSpecificMachines(machines, opRotated1, 1, 3, 0, assignedInThisScenario, operatorsUsedInThisScenario);
-		
-		// 555 (fáceis restantes) -> Operador no índice 4
-		assignSpecificMachines(machines, opRotated4, 1, 3, 0, assignedInThisScenario, operatorsUsedInThisScenario);
-		
-		// 6 (última máquina da lista) -> Operador no índice 5
-		if (machines.size() > 0) {
-			Machine lastMachine = machines.get(machines.size() - 1);
-			if (lastMachine.getOperator().isEmpty()) {
-				assignOperatorToMachine(lastMachine, opRotated5, assignedInThisScenario, operatorsUsedInThisScenario);
+		assignSpecificMachines(activeMachines, opRotated1, 1, 3, 0, assignedInThisScenario, operatorsUsedInThisScenario);
+		assignSpecificMachines(activeMachines, opRotated4, 1, 3, 0, assignedInThisScenario, operatorsUsedInThisScenario);
+		if (activeMachines.size() > 0) {
+			// Find the last *active* machine
+			Machine lastActiveMachine = activeMachines.get(activeMachines.size() - 1);
+			if (lastActiveMachine.getOperator().isEmpty()) {
+				assignOperatorToMachine(lastActiveMachine, opRotated5, assignedInThisScenario, operatorsUsedInThisScenario);
 			}
 		}
-		
-		assignRemainingToNotAssigned(machines);
+		// assignRemainingToNotAssigned(activeMachines); // Handled globally now
 	}
 	
-	// Cenário Difícil: CORRIGIDO para atribuir difícil a operador não utilizado
-	private void distributeOneDifficultScenarioRotatedCorrected(List<Machine> machines, List<Operator> rotatedOperators) {
-		// Regra original: 111, 2, (2 média), (5 média), 5, 333, 4, 4, 1(difícil), 4(adj fácil da difícil)
-		// Correção: Máquina difícil vai para operador ainda não usado neste cenário.
+	private void distributeOneDifficultScenarioRotatedCorrected(List<Machine> activeMachines, List<Operator> rotatedOperators) {
 		List<Machine> assignedInThisScenario = new ArrayList<>();
-		Set<Operator> operatorsUsedInThisScenario = new HashSet<>(); // Track used operators
+		Set<Operator> operatorsUsedInThisScenario = new HashSet<>();
 		int numOperators = rotatedOperators.size();
 		
-		// Cenário difícil parece usar apenas 5 operadores na regra original, mas precisa de 6 para ter um livre para a difícil
+		// Rule requires 6 operators to have one free for the difficult machine
 		if (numOperators < 6) {
-			System.out.println("Aviso: Menos de 6 operadores disponíveis para o cenário difícil (necessário para ter um operador livre para a máquina difícil).");
-			assignRemainingEquitably(machines, rotatedOperators, 0);
+			System.out.println("Aviso: Menos de 6 operadores disponíveis para o cenário difícil.");
+			assignRemainingEquitably(activeMachines, rotatedOperators, 0);
 			return;
 		}
 		
@@ -136,70 +167,48 @@ public class MachineDistributor {
 		Operator opRotated2 = getOperatorAtIndex(rotatedOperators, 2);
 		Operator opRotated3 = getOperatorAtIndex(rotatedOperators, 3);
 		Operator opRotated4 = getOperatorAtIndex(rotatedOperators, 4);
-		// opRotated5 (índice 5) é o potencial receptor da máquina difícil se estiver livre
 		
-		// 111 (fáceis) -> Operador no índice 0
-		assignSpecificMachines(machines, opRotated0, 1, 3, 0, assignedInThisScenario, operatorsUsedInThisScenario);
-		
-		// 2 (fácil) -> Operador no índice 1
-		assignSpecificMachines(machines, opRotated1, 1, 1, 0, assignedInThisScenario, operatorsUsedInThisScenario);
-		
-		// (2 maquina média) -> Operador no índice 1
-		int mediumMachineIndex2 = findFirstMachineByDifficultyAndUnassigned(machines, 2, 0, assignedInThisScenario);
+		// Apply rules using only activeMachines
+		assignSpecificMachines(activeMachines, opRotated0, 1, 3, 0, assignedInThisScenario, operatorsUsedInThisScenario);
+		assignSpecificMachines(activeMachines, opRotated1, 1, 1, 0, assignedInThisScenario, operatorsUsedInThisScenario);
+		int mediumMachineIndex2 = findFirstMachineByDifficultyAndUnassigned(activeMachines, 2, 0, assignedInThisScenario);
 		if (mediumMachineIndex2 != -1) {
-			assignOperatorToMachine(machines.get(mediumMachineIndex2), opRotated1, assignedInThisScenario, operatorsUsedInThisScenario);
+			assignOperatorToMachine(activeMachines.get(mediumMachineIndex2), opRotated1, assignedInThisScenario, operatorsUsedInThisScenario);
 		}
-		
-		// (5 maquina média) -> Operador no índice 4
-		int mediumMachineIndex5 = findFirstMachineByDifficultyAndUnassigned(machines, 2, 0, assignedInThisScenario);
+		int mediumMachineIndex5 = findFirstMachineByDifficultyAndUnassigned(activeMachines, 2, 0, assignedInThisScenario);
 		if (mediumMachineIndex5 != -1) {
-			assignOperatorToMachine(machines.get(mediumMachineIndex5), opRotated4, assignedInThisScenario, operatorsUsedInThisScenario);
+			assignOperatorToMachine(activeMachines.get(mediumMachineIndex5), opRotated4, assignedInThisScenario, operatorsUsedInThisScenario);
 		}
+		assignSpecificMachines(activeMachines, opRotated4, 1, 1, 0, assignedInThisScenario, operatorsUsedInThisScenario);
+		assignSpecificMachines(activeMachines, opRotated2, 1, 3, 0, assignedInThisScenario, operatorsUsedInThisScenario);
+		assignSpecificMachines(activeMachines, opRotated3, 1, 1, 0, assignedInThisScenario, operatorsUsedInThisScenario);
+		assignSpecificMachines(activeMachines, opRotated3, 1, 1, 0, assignedInThisScenario, operatorsUsedInThisScenario);
 		
-		// 5 (fácil) -> Operador no índice 4
-		assignSpecificMachines(machines, opRotated4, 1, 1, 0, assignedInThisScenario, operatorsUsedInThisScenario);
-		
-		// 333 (fáceis) -> Operador no índice 2
-		assignSpecificMachines(machines, opRotated2, 1, 3, 0, assignedInThisScenario, operatorsUsedInThisScenario);
-		
-		// 4 (fácil) -> Operador no índice 3
-		assignSpecificMachines(machines, opRotated3, 1, 1, 0, assignedInThisScenario, operatorsUsedInThisScenario);
-		
-		// 4 (fácil) -> Operador no índice 3
-		assignSpecificMachines(machines, opRotated3, 1, 1, 0, assignedInThisScenario, operatorsUsedInThisScenario);
-		
-		// (difícil) -> Operador AINDA NÃO UTILIZADO neste cenário
-		int difficultMachineIndex = findFirstMachineByDifficultyAndUnassigned(machines, 3, 0, assignedInThisScenario);
+		int difficultMachineIndex = findFirstMachineByDifficultyAndUnassigned(activeMachines, 3, 0, assignedInThisScenario);
 		if (difficultMachineIndex != -1) {
 			Operator operatorForDifficult = null;
-			// Encontra o primeiro operador na lista rotacionada que ainda não foi usado
 			for (Operator op : rotatedOperators) {
 				if (!operatorsUsedInThisScenario.contains(op)) {
 					operatorForDifficult = op;
 					break;
 				}
 			}
-			
 			if (operatorForDifficult != null) {
-				System.out.println("Atribuindo máquina difícil (" + machines.get(difficultMachineIndex).getName() + ") para operador livre: " + operatorForDifficult.getName());
-				assignOperatorToMachine(machines.get(difficultMachineIndex), operatorForDifficult, assignedInThisScenario, operatorsUsedInThisScenario);
+				System.out.println("Atribuindo máquina difícil (" + activeMachines.get(difficultMachineIndex).getName() + ") para operador livre: " + operatorForDifficult.getName());
+				assignOperatorToMachine(activeMachines.get(difficultMachineIndex), operatorForDifficult, assignedInThisScenario, operatorsUsedInThisScenario);
 				} else {
 				System.out.println("Aviso: NENHUM operador livre encontrado para a máquina difícil. Atribuindo a 'não atribuído'.");
-				assignOperatorToMachine(machines.get(difficultMachineIndex), null, assignedInThisScenario, operatorsUsedInThisScenario); // Atribui a null -> NOT_ASSIGNED
+				assignOperatorToMachine(activeMachines.get(difficultMachineIndex), null, assignedInThisScenario, operatorsUsedInThisScenario);
 			}
-			
-			// 4 (fácil adjacente mais próxima da difícil) -> Operador no índice 3 (opRotated3)
-			// Esta regra permanece a mesma, atribuindo ao 4º operador da sequência rotacionada
-			int adjacentEasyIndex = findAdjacentMachineByDifficultyAndUnassigned(machines, difficultMachineIndex, 1, assignedInThisScenario);
+			int adjacentEasyIndex = findAdjacentMachineByDifficultyAndUnassigned(activeMachines, difficultMachineIndex, 1, assignedInThisScenario);
 			if (adjacentEasyIndex != -1) {
-				assignOperatorToMachine(machines.get(adjacentEasyIndex), opRotated3, assignedInThisScenario, operatorsUsedInThisScenario);
+				assignOperatorToMachine(activeMachines.get(adjacentEasyIndex), opRotated3, assignedInThisScenario, operatorsUsedInThisScenario);
 			}
 		}
-		
-		assignRemainingToNotAssigned(machines);
+		// assignRemainingToNotAssigned(activeMachines); // Handled globally now
 	}
 	
-	// --- Métodos Auxiliares (adaptados para usar Set de operadores usados) ---
+	// --- Helper Methods (Now operate on the list passed to them, usually activeMachines) ---
 	
 	private Operator getOperatorAtIndex(List<Operator> operators, int index) {
 		if (operators == null || operators.isEmpty() || index < 0) {
@@ -208,17 +217,20 @@ public class MachineDistributor {
 		return operators.get(index % operators.size());
 	}
 	
-	private void clearCurrentDistribution(List<Machine> machines) {
-		for (Machine machine : machines) {
+	// Clears assignments from a list of machines
+	private void clearCurrentDistribution(List<Machine> machineList) {
+		for (Machine machine : machineList) {
 			machine.setOperator("");
 		}
 	}
 	
-	private int assignMachinesToOperator(List<Machine> machines, Operator op, int count, int startIndex) {
+	// Assigns count machines from the list to the operator, starting search from startIndex
+	private int assignMachinesToOperator(List<Machine> machineList, Operator op, int count, int startIndex) {
 		int assigned = 0;
 		String operatorName = (op != null) ? op.getName() : NOT_ASSIGNED;
-		for (int i = startIndex; i < machines.size() && assigned < count; i++) {
-			Machine machine = machines.get(i);
+		for (int i = startIndex; i < machineList.size() && assigned < count; i++) {
+			Machine machine = machineList.get(i);
+			// Assign only if the machine is unassigned (and implicitly active, as it's from activeMachines list)
 			if (machine.getOperator().isEmpty()) {
 				machine.setOperator(operatorName);
 				assigned++;
@@ -227,14 +239,15 @@ public class MachineDistributor {
 		return assigned;
 	}
 	
-	private void assignRemainingEquitably(List<Machine> machines, List<Operator> operators, int startIndex) {
+	// Distributes machines equitably among operators
+	private void assignRemainingEquitably(List<Machine> machineList, List<Operator> operators, int startIndex) {
 		if (operators == null || operators.isEmpty()) {
-			assignRemainingToNotAssigned(machines);
+			// assignRemainingToNotAssigned(machineList); // Handled globally
 			return;
 		}
 		int opIndex = 0;
-		for (int i = startIndex; i < machines.size(); i++) {
-			Machine machine = machines.get(i);
+		for (int i = startIndex; i < machineList.size(); i++) {
+			Machine machine = machineList.get(i);
 			if (machine.getOperator().isEmpty()) {
 				Operator currentOp = operators.get(opIndex % operators.size());
 				machine.setOperator(currentOp.getName());
@@ -243,28 +256,29 @@ public class MachineDistributor {
 		}
 	}
 	
-	// Modificado para adicionar operador ao Set de usados
-	private void assignSpecificMachines(List<Machine> machines, Operator op, int difficulty, int count, int startIndex, List<Machine> alreadyAssigned, Set<Operator> operatorsUsed) {
+	// Assigns specific count of machines with given difficulty to an operator
+	private void assignSpecificMachines(List<Machine> machineList, Operator op, int difficulty, int count, int startIndex, List<Machine> alreadyAssigned, Set<Operator> operatorsUsed) {
 		int assigned = 0;
 		String operatorName = (op != null) ? op.getName() : NOT_ASSIGNED;
 		boolean operatorAddedToUsedSet = false;
 		
-		for (int i = startIndex; i < machines.size() && assigned < count; i++) {
-			Machine machine = machines.get(i);
+		// Search from startIndex onwards
+		for (int i = startIndex; i < machineList.size() && assigned < count; i++) {
+			Machine machine = machineList.get(i);
 			if (machine.getDifficulty() == difficulty && machine.getOperator().isEmpty() && !alreadyAssigned.contains(machine)) {
 				machine.setOperator(operatorName);
 				alreadyAssigned.add(machine);
 				assigned++;
 				if (op != null && !operatorAddedToUsedSet) {
 					operatorsUsed.add(op);
-					operatorAddedToUsedSet = true; // Adiciona apenas uma vez por chamada
+					operatorAddedToUsedSet = true;
 				}
 			}
 		}
-		
+		// Search from beginning up to startIndex if needed
 		if (assigned < count && startIndex > 0) {
 			for (int i = 0; i < startIndex && assigned < count; i++) {
-				Machine machine = machines.get(i);
+				Machine machine = machineList.get(i);
 				if (machine.getDifficulty() == difficulty && machine.getOperator().isEmpty() && !alreadyAssigned.contains(machine)) {
 					machine.setOperator(operatorName);
 					alreadyAssigned.add(machine);
@@ -276,9 +290,10 @@ public class MachineDistributor {
 				}
 			}
 		}
+		// Search entire list again if still needed (should be rare)
 		if (assigned < count) {
-			for (int i = 0; i < machines.size() && assigned < count; i++) {
-				Machine machine = machines.get(i);
+			for (int i = 0; i < machineList.size() && assigned < count; i++) {
+				Machine machine = machineList.get(i);
 				if (machine.getDifficulty() == difficulty && machine.getOperator().isEmpty() && !alreadyAssigned.contains(machine)) {
 					machine.setOperator(operatorName);
 					alreadyAssigned.add(machine);
@@ -292,27 +307,28 @@ public class MachineDistributor {
 		}
 	}
 	
-	// Modificado para adicionar operador ao Set de usados
+	// Assigns a single machine to an operator
 	private void assignOperatorToMachine(Machine machine, Operator op, List<Machine> alreadyAssigned, Set<Operator> operatorsUsed) {
 		if (machine != null && machine.getOperator().isEmpty() && !alreadyAssigned.contains(machine)) {
 			String operatorName = (op != null) ? op.getName() : NOT_ASSIGNED;
 			machine.setOperator(operatorName);
 			alreadyAssigned.add(machine);
 			if (op != null) {
-				operatorsUsed.add(op); // Adiciona o operador ao conjunto de usados
+				operatorsUsed.add(op);
 			}
 		}
 	}
 	
-	private int findFirstMachineByDifficultyAndUnassigned(List<Machine> machines, int difficulty, int startIndex, List<Machine> alreadyAssigned) {
-		for (int i = startIndex; i < machines.size(); i++) {
-			Machine m = machines.get(i);
+	// Finds the first unassigned machine of a specific difficulty
+	private int findFirstMachineByDifficultyAndUnassigned(List<Machine> machineList, int difficulty, int startIndex, List<Machine> alreadyAssigned) {
+		for (int i = startIndex; i < machineList.size(); i++) {
+			Machine m = machineList.get(i);
 			if (m.getDifficulty() == difficulty && m.getOperator().isEmpty() && !alreadyAssigned.contains(m)) {
 				return i;
 			}
 		}
 		for (int i = 0; i < startIndex; i++) {
-			Machine m = machines.get(i);
+			Machine m = machineList.get(i);
 			if (m.getDifficulty() == difficulty && m.getOperator().isEmpty() && !alreadyAssigned.contains(m)) {
 				return i;
 			}
@@ -320,17 +336,18 @@ public class MachineDistributor {
 		return -1;
 	}
 	
-	private int findAdjacentMachineByDifficultyAndUnassigned(List<Machine> machines, int pos, int difficulty, List<Machine> alreadyAssigned) {
+	// Finds an adjacent unassigned machine of a specific difficulty
+	private int findAdjacentMachineByDifficultyAndUnassigned(List<Machine> machineList, int pos, int difficulty, List<Machine> alreadyAssigned) {
 		int leftIdx = pos - 1;
 		if (leftIdx >= 0) {
-			Machine adjacent = machines.get(leftIdx);
+			Machine adjacent = machineList.get(leftIdx);
 			if (adjacent.getDifficulty() == difficulty && adjacent.getOperator().isEmpty() && !alreadyAssigned.contains(adjacent)) {
 				return leftIdx;
 			}
 		}
 		int rightIdx = pos + 1;
-		if (rightIdx < machines.size()) {
-			Machine adjacent = machines.get(rightIdx);
+		if (rightIdx < machineList.size()) {
+			Machine adjacent = machineList.get(rightIdx);
 			if (adjacent.getDifficulty() == difficulty && adjacent.getOperator().isEmpty() && !alreadyAssigned.contains(adjacent)) {
 				return rightIdx;
 			}
@@ -338,8 +355,9 @@ public class MachineDistributor {
 		return -1;
 	}
 	
-	private void assignRemainingToNotAssigned(List<Machine> machines) {
-		for (Machine machine : machines) {
+	// Assigns any machine in the list that still has no operator to NOT_ASSIGNED
+	private void assignRemainingToNotAssigned(List<Machine> machineList) {
+		for (Machine machine : machineList) {
 			if (machine.getOperator().isEmpty()) {
 				machine.setOperator(NOT_ASSIGNED);
 			}
