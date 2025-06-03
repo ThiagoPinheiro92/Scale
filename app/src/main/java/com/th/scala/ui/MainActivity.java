@@ -187,48 +187,52 @@ public class MainActivity extends Activity {
 	}
 	
 	// --- History Saving ---
-	private void saveDistributionHistory(Context context, List<Machine> machines, List<Operator> operatorsUsedForRotation) {
-		StringBuilder historyEntry = new StringBuilder();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-		String timestamp = sdf.format(new Date());
-		
-		historyEntry.append("--- Histórico de Distribuição [").append(timestamp).append("] ---");
-		historyEntry.append("Ordem dos Operadores (Rotação Atual): ").append(getOperatorNames(operatorsUsedForRotation)).append("");
-		historyEntry.append("Máquinas Distribuídas (Considerando Estado Ligado/Desligado):");
-		
-		if (machines == null || machines.isEmpty()) {
-			historyEntry.append("  (Nenhuma máquina na lista)");
-			} else {
-			long activeCount = machines.stream().filter(Machine::isOn).count();
-			historyEntry.append("  (Máquinas Ativas para Distribuição: ").append(activeCount).append(")");
-			for (Machine machine : machines) {
-				historyEntry.append("  - Máquina: ").append(machine.getName())
-				.append(" (").append(machine.getNumber()).append(")")
-				.append(" [").append(machine.isOn() ? "LIGADA" : "DESLIGADA").append("]")
-				.append(" -> Operador: ")
-				.append(machine.getOperator() != null && !machine.getOperator().isEmpty() ? machine.getOperator() : "(não atribuído)")
-				.append("");
-			}
-		}
-		historyEntry.append("--- Fim da Entrada [").append(timestamp).append("] ---");
-		
-		try {
-			File historyFile = new File(context.getExternalFilesDir(null), HISTORY_FILENAME);
-			FileOutputStream fos = new FileOutputStream(historyFile, true);
-			OutputStreamWriter writer = new OutputStreamWriter(fos);
-			writer.append(historyEntry.toString());
-			writer.close();
-			fos.close();
-			Log.i(TAG, "Histórico de distribuição salvo em: " + historyFile.getAbsolutePath());
-			} catch (IOException e) {
-			Log.e(TAG, "Erro ao salvar histórico de distribuição", e);
-			Toast.makeText(context, "Erro ao salvar histórico: " + e.getMessage(), Toast.LENGTH_LONG).show();
-		}
-	}
-	
-	// Helper para obter nomes dos operadores
-	private String getOperatorNames(List<Operator> operators) {
-		if (operators == null || operators.isEmpty()) { return "[]"; }
-		return "[" + operators.stream().map(Operator::getName).collect(Collectors.joining(", ")) + "]";
-	}
+private void saveDistributionHistory(Context context, List<Machine> machines, List<Operator> operatorsUsedForRotation) {
+    StringBuilder historyEntry = new StringBuilder();
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+    String timestamp = sdf.format(new Date());
+    
+    // Cabeçalho
+    historyEntry.append("\n--- Histórico de Distribuição [").append(timestamp).append("] ---\n\n");
+    historyEntry.append("Ordem dos Operadores (Rotação Atual): ").append(getOperatorNames(operatorsUsedForRotation)).append("\n\n");
+    historyEntry.append("Máquinas Distribuídas (Considerando Estado Ligado/Desligado):\n");
+    
+    if (machines == null || machines.isEmpty()) {
+        historyEntry.append("  (Nenhuma máquina na lista)\n");
+    } else {
+        long activeCount = machines.stream().filter(Machine::isOn).count();
+        historyEntry.append("  (Máquinas Ativas para Distribuição: ").append(activeCount).append(")\n\n");
+        
+        for (Machine machine : machines) {
+            historyEntry.append("-").append(machine.getName())
+                .append(" (").append(machine.getNumber()).append(")")
+                .append(" [").append(machine.isOn() ? "🟢 LIG" : "🔴 DESL}").append("]")
+                .append(" -> Operador: ")
+                .append(machine.getOperator() != null && !machine.getOperator().isEmpty() ? machine.getOperator() : "(não atribuído)")
+                .append("\n");
+        }
+    }
+    
+    // Rodapé
+    historyEntry.append("\n--- Fim da Entrada [").append(timestamp).append("] ---\n");
+    
+    try {
+        File historyFile = new File(context.getExternalFilesDir(null), HISTORY_FILENAME);
+        FileOutputStream fos = new FileOutputStream(historyFile, true);
+        OutputStreamWriter writer = new OutputStreamWriter(fos);
+        writer.append(historyEntry.toString());
+        writer.close();
+        fos.close();
+        Log.i(TAG, "Histórico de distribuição salvo em: " + historyFile.getAbsolutePath());
+    } catch (IOException e) {
+        Log.e(TAG, "Erro ao salvar histórico de distribuição", e);
+        Toast.makeText(context, "Erro ao salvar histórico: " + e.getMessage(), Toast.LENGTH_LONG).show();
+    }
+}
+
+// Helper para obter nomes dos operadores
+private String getOperatorNames(List<Operator> operators) {
+    if (operators == null || operators.isEmpty()) { return "[]"; }
+    return "[" + operators.stream().map(Operator::getName).collect(Collectors.joining(", ")) + "]";
+}
 }
