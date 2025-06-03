@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-// v8: Refactored rule application for reduced scenarios (<14 active) to ensure specific patterns (adjacency, 3-by-3) are consistently applied before equitable fallback.
+// v9: Reverted operator selection to ALWAYS use the rotated list, ensuring rotation applies even in reduced scenarios.
 public class MachineDistributor {
 	
 	private static final String NOT_ASSIGNED = "(não atribuído)";
@@ -24,7 +24,7 @@ public class MachineDistributor {
 		.filter(Machine::isOn)
 		.collect(Collectors.toList());
 		
-		System.out.println("--- Iniciando Distribuição v8 --- ");
+		System.out.println("--- Iniciando Distribuição v9 --- ");
 		System.out.println("Máquinas LIGADAS: " + activeMachines.size());
 		
 		if (activeMachines.isEmpty()) {
@@ -34,16 +34,18 @@ public class MachineDistributor {
 		}
 		
 		int numberOfOperatorsToUse = determineOperatorCountDetailedCorrected(activeMachines);
-		if (numberOfOperatorsToUse > originalOperators.size()) {
-			numberOfOperatorsToUse = originalOperators.size();
+		// Ensure we don't request more operators than available in the rotated list
+		if (numberOfOperatorsToUse > rotatedOperators.size()) {
+			numberOfOperatorsToUse = rotatedOperators.size();
 		}
 		if (numberOfOperatorsToUse <= 0) {
 			assignRemainingToNotAssigned(allMachines);
 			return;
 		}
 		
-		List<Operator> selectedOperators = selectOperators(activeMachines, rotatedOperators, originalOperators, numberOfOperatorsToUse);
-		System.out.println("Operadores selecionados (" + selectedOperators.size() + "): " + getOperatorNamesSimple(selectedOperators));
+		// ALWAYS use the rotated list for selection now
+		List<Operator> selectedOperators = selectOperatorsUsingRotation(rotatedOperators, numberOfOperatorsToUse);
+		System.out.println("Operadores selecionados (" + selectedOperators.size() + ") [SEMPRE ROTACIONADO]: " + getOperatorNamesSimple(selectedOperators));
 		
 		// Apply distribution rules, prioritizing specific scenarios
 		boolean specificRuleFullyApplied = applyDistributionRulesRefactored(activeMachines, selectedOperators, this.originalMachineListForAdjacency);
@@ -62,32 +64,21 @@ public class MachineDistributor {
 		}
 		
 		assignRemainingToNotAssigned(allMachines); // Mark inactive/unassigned
-		System.out.println("--- Distribuição v8 Concluída ---");
+		System.out.println("--- Distribuição v9 Concluída ---");
 	}
 	
-	// Selects operators: Fixed for < 5/6 ops, Rotated for 14-machine scenarios
-	private List<Operator> selectOperators(List<Machine> activeMachines, List<Operator> rotatedOperators, List<Operator> originalOperators, int numberOfOperatorsToUse) {
-		boolean useRotation = false;
-		if (activeMachines.size() == 14) {
-			long easyCount = activeMachines.stream().filter(m -> m.getDifficulty() == 1).count();
-			long mediumCount = activeMachines.stream().filter(m -> m.getDifficulty() == 2).count();
-			long difficultCount = activeMachines.stream().filter(m -> m.getDifficulty() == 3).count();
-			if ((easyCount == 14 && numberOfOperatorsToUse == 5) || ((mediumCount >= 1 || difficultCount >= 1) && numberOfOperatorsToUse == 6)) {
-				useRotation = true;
-			}
-		}
-		
-		List<Operator> sourceList = useRotation ? rotatedOperators : originalOperators;
-		String listType = useRotation ? "ROTACIONADA" : "ORIGINAL FIXA";
-		// System.out.println("Selecionando operadores da lista " + listType);
+	// MODIFIED: Selects operators ALWAYS using the rotated list
+	private List<Operator> selectOperatorsUsingRotation(List<Operator> rotatedOperators, int numberOfOperatorsToUse) {
+		List<Operator> sourceList = rotatedOperators;
+		// System.out.println("Selecionando operadores da lista ROTACIONADA");
 		
 		if (sourceList == null || sourceList.isEmpty()) {
-			System.out.println("ERRO: Lista de operadores fonte (" + listType + ") está vazia ou nula!");
+			System.out.println("ERRO: Lista de operadores rotacionada está vazia ou nula!");
 			return new ArrayList<>(); // Return empty list to avoid crash
 		}
 		
 		if (sourceList.size() < numberOfOperatorsToUse) {
-			// System.out.println("Aviso: Lista " + listType + " menor que operadores necessários. Usando todos da lista.");
+			// System.out.println("Aviso: Lista rotacionada menor que operadores necessários. Usando todos da lista.");
 			return new ArrayList<>(sourceList);
 			} else {
 			// Return a new list to avoid modifying the original sublist view
